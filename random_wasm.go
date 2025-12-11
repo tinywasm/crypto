@@ -1,6 +1,6 @@
 //go:build wasm
 
-package tinycrypto
+package crypto
 
 import (
 	"syscall/js"

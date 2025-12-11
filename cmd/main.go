@@ -3,7 +3,7 @@ package main
 import (
 	"syscall/js"
 
-	"github.com/waj334/tinygo-cryptoauthlib"
+	"github.com/tinywasm/crypto"
 )
 
 func main() {

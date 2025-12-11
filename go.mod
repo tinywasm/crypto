@@ -1,9 +1,9 @@
-module github.com/waj334/tinygo-cryptoauthlib
+module github.com/tinywasm/crypto
 
 go 1.25.2
 
 require (
-	github.com/cdvelop/tinystring v0.10.4
+	github.com/tinywasm/fmt v0.10.4
 	github.com/playwright-community/playwright-go v0.5200.0
 	github.com/stretchr/testify v1.11.1
 )

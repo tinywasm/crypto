@@ -17,7 +17,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/waj334/tinygo-cryptoauthlib"
+	"github.com/tinywasm/crypto"
 )
 
 func main() {
@@ -48,7 +48,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/waj334/tinygo-cryptoauthlib"
+	"github.com/tinywasm/crypto"
 )
 
 func main() {
@@ -82,7 +82,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/waj334/tinygo-cryptoauthlib"
+	"github.com/tinywasm/crypto"
 )
 
 func main() {

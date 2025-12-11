@@ -1,4 +1,4 @@
-package tinycrypto
+package crypto
 
 import (
 	"crypto/aes"
@@ -10,7 +10,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 
-	. "github.com/cdvelop/tinystring"
+	. "github.com/tinywasm/fmt"
 )
 
 // TinyCrypto is the engine for cryptographic operations.

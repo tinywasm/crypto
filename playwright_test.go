@@ -1,4 +1,4 @@
-package tinycrypto
+package crypto
 
 import (
 	"log"
