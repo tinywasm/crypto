@@ -5,7 +5,7 @@ go 1.25.2
 require (
 	github.com/playwright-community/playwright-go v0.5200.0
 	github.com/stretchr/testify v1.11.1
-	github.com/tinywasm/fmt v0.17.0
+	github.com/tinywasm/fmt v0.17.3
 )
 
 require (
