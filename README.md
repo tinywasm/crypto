@@ -14,7 +14,7 @@ A lightweight Go library for cryptographic operations, designed for WebAssembly 
 
 ## Basic Usage
 
-To use the library, create a new `TinyCrypto` engine and call its methods:
+To use the library, import the package and call its functions directly:
 
 ```go
 package main
@@ -26,9 +26,6 @@ import (
 )
 
 func main() {
-	// Create a new crypto engine
-	crypto := tinycrypto.New()
-
 	// Symmetric encryption
 	key := make([]byte, 32) // AES-256 key
 	plaintext := []byte("hello world")
@@ -67,3 +64,5 @@ The detailed API documentation is organized into the following sections:
 - [Symmetric Encryption](./docs/symmetric.md)
 - [Asymmetric Encryption](./docs/asymmetric.md)
 - [Digital Signatures](./docs/signatures.md)
+- [Architecture Details](./docs/ARCHITECTURE.md)
+- [Implementation Guide](./docs/IMPLEMENTATION.md)

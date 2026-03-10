@@ -13,17 +13,11 @@ import (
 	. "github.com/tinywasm/fmt"
 )
 
-// TinyCrypto is the engine for cryptographic operations.
-type TinyCrypto struct{}
-
-// New creates a new TinyCrypto engine.
-func New() *TinyCrypto {
-	return &TinyCrypto{}
-}
+// The crypto logic is exposed as direct package-level functions.
 
 // Encrypt performs symmetric encryption of plaintext using AES-GCM with a 32-byte key.
 // It returns the ciphertext, which includes the nonce and the encrypted data.
-func (c *TinyCrypto) Encrypt(plaintext, key []byte) (ciphertext []byte, err error) {
+func Encrypt(plaintext, key []byte) (ciphertext []byte, err error) {
 	if len(key) != 32 {
 		return nil, Err("key length must be 32 bytes for AES-256")
 	}
@@ -48,7 +42,7 @@ func (c *TinyCrypto) Encrypt(plaintext, key []byte) (ciphertext []byte, err erro
 }
 
 // Decrypt performs symmetric decryption of ciphertext using AES-GCM with a 32-byte key.
-func (c *TinyCrypto) Decrypt(ciphertext, key []byte) (plaintext []byte, err error) {
+func Decrypt(ciphertext, key []byte) (plaintext []byte, err error) {
 	if len(key) != 32 {
 		return nil, Err("key length must be 32 bytes for AES-256")
 	}
@@ -78,7 +72,7 @@ func (c *TinyCrypto) Decrypt(ciphertext, key []byte) (plaintext []byte, err erro
 }
 
 // GenerateKeyPair generates a new ECDSA key pair for asymmetric cryptography using the P-256 curve.
-func (c *TinyCrypto) GenerateKeyPair() (publicKey []byte, privateKey []byte, err error) {
+func GenerateKeyPair() (publicKey []byte, privateKey []byte, err error) {
 	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, err
@@ -99,7 +93,7 @@ func (c *TinyCrypto) GenerateKeyPair() (publicKey []byte, privateKey []byte, err
 
 // EncryptAsymmetric encrypts plaintext for a given public key using ECIES (ECDH + AES-GCM).
 // The returned ciphertext includes the ephemeral public key needed for decryption.
-func (c *TinyCrypto) EncryptAsymmetric(plaintext, publicKey []byte) (ciphertext []byte, err error) {
+func EncryptAsymmetric(plaintext, publicKey []byte) (ciphertext []byte, err error) {
 	pub, err := x509.ParsePKIXPublicKey(publicKey)
 	if err != nil {
 		return nil, Err("failed to parse public key:", err)
@@ -131,7 +125,7 @@ func (c *TinyCrypto) EncryptAsymmetric(plaintext, publicKey []byte) (ciphertext 
 	key := sha256.Sum256(sharedSecret)
 
 	// Encrypt with AES-GCM
-	encrypted, err := c.Encrypt(plaintext, key[:])
+	encrypted, err := Encrypt(plaintext, key[:])
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +137,7 @@ func (c *TinyCrypto) EncryptAsymmetric(plaintext, publicKey []byte) (ciphertext 
 }
 
 // DecryptAsymmetric decrypts ciphertext with a private key.
-func (c *TinyCrypto) DecryptAsymmetric(ciphertext, privateKey []byte) (plaintext []byte, err error) {
+func DecryptAsymmetric(ciphertext, privateKey []byte) (plaintext []byte, err error) {
 	priv, err := x509.ParseECPrivateKey(privateKey)
 	if err != nil {
 		return nil, Err("failed to parse private key:", err)
@@ -173,7 +167,7 @@ func (c *TinyCrypto) DecryptAsymmetric(ciphertext, privateKey []byte) (plaintext
 	key := sha256.Sum256(sharedSecret)
 
 	// Decrypt with AES-GCM
-	plaintext, err = c.Decrypt(ciphertext, key[:])
+	plaintext, err = Decrypt(ciphertext, key[:])
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +176,7 @@ func (c *TinyCrypto) DecryptAsymmetric(ciphertext, privateKey []byte) (plaintext
 }
 
 // Sign creates a digital signature for a message using a private key (ECDSA with P-256 and SHA-256).
-func (c *TinyCrypto) Sign(message, privateKey []byte) (signature []byte, err error) {
+func Sign(message, privateKey []byte) (signature []byte, err error) {
 	privKey, err := x509.ParseECPrivateKey(privateKey)
 	if err != nil {
 		return nil, err
@@ -197,7 +191,7 @@ func (c *TinyCrypto) Sign(message, privateKey []byte) (signature []byte, err err
 }
 
 // Verify checks a digital signature of a message using a public key.
-func (c *TinyCrypto) Verify(message, signature, publicKey []byte) (ok bool, err error) {
+func Verify(message, signature, publicKey []byte) (ok bool, err error) {
 	pubKey, err := x509.ParsePKIXPublicKey(publicKey)
 	if err != nil {
 		return false, err
