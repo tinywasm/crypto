@@ -5,7 +5,7 @@ A lightweight Go library for cryptographic operations, designed for WebAssembly 
 
 ## Features
 
-- **Simple API:** Easy-to-use API for symmetric and asymmetric encryption, and digital signatures.
+- **Simple API:** Easy-to-use API for symmetric and asymmetric encryption, digital signatures, and HMAC.
 - **TinyGo Optimized:** Designed to produce small binaries when compiled with TinyGo.
 - **WebAssembly Ready:** Can be used in browser environments.
 - **Zero Dependencies on Go Standard Library:** Uses `github.com/tinywasm/fmt` for string, number, and error handling to minimize binary size.
@@ -62,5 +62,7 @@ The detailed API documentation is organized into the following sections:
 - [Symmetric Encryption](./docs/symmetric.md)
 - [Asymmetric Encryption](./docs/asymmetric.md)
 - [Digital Signatures](./docs/signatures.md)
+- [Hashing and MACs](./docs/hashing.md)
 - [Architecture Details](./docs/ARCHITECTURE.md)
 - [Implementation Guide](./docs/IMPLEMENTATION.md)
+- [TinyGo Compatibility](./docs/TINYGO_COMPATIBILITY.md)
