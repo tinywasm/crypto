@@ -1,4 +1,4 @@
-# TinyCrypto
+# tinywasm/crypto
 <img src="docs/img/badges.svg">
 
 A lightweight Go library for cryptographic operations, designed for WebAssembly and small devices using TinyGo.
@@ -18,7 +18,7 @@ To use the library, import the package and call its functions directly:
 package main
 
 import (
-	"fmt"
+	"github.com/tinywasm/fmt"
 
 	"github.com/tinywasm/crypto"
 )
