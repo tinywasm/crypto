@@ -19,7 +19,6 @@ package main
 
 import (
 	"github.com/tinywasm/fmt"
-
 	"github.com/tinywasm/crypto"
 )
 
