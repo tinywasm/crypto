@@ -54,9 +54,9 @@ casos de error.
 | `crypto/ecdsa`, `crypto/elliptic` | `tinycrypto.go` (firmas) | ✅ compila y pasa | usar stdlib |
 | `crypto/ecdh` | `tinycrypto.go` (cifrado asimétrico) | ✅ compila y pasa | usar stdlib |
 | `crypto/x509` | `tinycrypto.go` (serialización de claves) | ✅ compila y pasa | usar stdlib |
-| `crypto/sha256` | `tinycrypto.go` | ✅ compila y pasa | usar stdlib |
+| `crypto/sha256` | `tinycrypto.go`, `hmac.go` | ✅ compila y pasa | usar stdlib |
 | `crypto/rand` | `random_native.go` (`!wasm`) | n/a — no entra en el binario wasm | usar stdlib |
-| `crypto/hmac` | *pendiente* (`hmac.go`, ver PLAN) | ✅ compila | usar stdlib |
+| `crypto/hmac` | `hmac.go` | ✅ compila y pasa | usar stdlib |
 | `crypto/subtle` | *pendiente* (comparación constante) | ✅ compila | usar stdlib |
 | `encoding/base64` | base64url para JWT | ✅ compila | **sustituido** por `tinywasm/base64` (cero deps, −31 KB) — ver abajo |
 

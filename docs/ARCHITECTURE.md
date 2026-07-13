@@ -5,13 +5,14 @@ The `crypto` module is an isomorphic library designed to provide cryptographic c
 ## 1. Design Philosophy
 
 ### 1.1 Direct Package API
-The library uses a stateless, direct API approach. Instead of requiring developers to instantiate a struct `crypto.New()`, it exposes plain package-level functions (`crypto.Encrypt`, `crypto.Sign`, etc.). This reduces verbosity, simplifies the code style across the project, and improves ergonomics. 
+The library uses a stateless, direct API approach. Instead of requiring developers to instantiate a struct `crypto.New()`, it exposes plain package-level functions (`crypto.Encrypt`, `crypto.Sign`, `crypto.HMACSHA256`, etc.). This reduces verbosity, simplifies the code style across the project, and improves ergonomics.
 
-Because `crypto` handles random entropy generation and pure math evaluation (AES, ECDSA, ECDH), no persistent configuration object (struct instance) is necessary to execute these operations.
+Because `crypto` handles random entropy generation and pure math evaluation (AES, ECDSA, ECDH, HMAC), no persistent configuration object (struct instance) is necessary to execute these operations.
 
 ### 1.2 Isomorphism and Standards
 Both the native backend runtime and the TinyGo WebAssembly runtime implement identical cryptographic algorithms over standard signatures. There is 100% behavioral equivalence.
 - The standard library's `crypto` subpackages are used internally, except tailored implementations for entropy collection depending on the environment (e.g., `readRandom` mapping to generic `rand.Read` natively, and to `crypto.getRandomValues()` internally on the WebAssembly browser side).
+- **Encodings are not included:** To keep the binary size minimal, encodings like Base64 or Hex are not part of this package. They are provided as zero-dependency packages in the ecosystem (e.g., `github.com/tinywasm/base64`).
 
 ## 2. Testing Constraints (Dual Testing Pattern)
 To ensure the logic is fully compatible with both executing environments, tests must follow the **WASM/Stlib Dual Testing Pattern**:
