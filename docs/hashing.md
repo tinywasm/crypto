@@ -58,3 +58,38 @@ func VerifyJWT(token string, key []byte) bool {
 	return crypto.HMACEqual(expectedSig, providedSig)
 }
 ```
+
+## Password Hashing — `crypto/bcrypt`
+
+`crypto/bcrypt` is a stdlib-free port of `golang.org/x/crypto/bcrypt`, built
+on top of `crypto/blowfish` (the cipher bcrypt uses internally) and
+`crypto/subtle` (constant-time hash comparison). It exists as a leaf
+subpackage — see `docs/ARCHITECTURE.md` §1.3 — so that importing it never
+pulls stdlib `fmt`/`reflect`/`encoding/base64` into a WASM binary.
+
+```go
+func GenerateFromPassword(password []byte, cost int) ([]byte, error)
+func CompareHashAndPassword(hashedPassword, password []byte) error
+func Cost(hashedPassword []byte) (int, error)
+```
+
+Signatures are identical to `golang.org/x/crypto/bcrypt`, and hashes are
+interoperable in both directions: a hash produced by `golang.org/x/crypto/bcrypt`
+verifies correctly here, and vice versa.
+
+```go
+import "github.com/tinywasm/crypto/bcrypt"
+
+hashed, err := bcrypt.GenerateFromPassword([]byte("mysecret"), bcrypt.DefaultCost)
+if err != nil {
+	panic(err)
+}
+
+err = bcrypt.CompareHashAndPassword(hashed, []byte("mysecret"))
+// err == nil: password matches
+// err == bcrypt.ErrMismatchedHashAndPassword: password does not match
+```
+
+`DefaultCost` (10) takes roughly 100 ms per hash by design — that cost is what
+makes brute-forcing expensive. Use `bcrypt.MinCost` in tests that are not
+specifically measuring cost.

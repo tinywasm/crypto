@@ -5,10 +5,10 @@ A lightweight Go library for cryptographic operations, designed for WebAssembly 
 
 ## Features
 
-- **Simple API:** Easy-to-use API for symmetric and asymmetric encryption, digital signatures, and HMAC.
-- **TinyGo Optimized:** Designed to produce small binaries when compiled with TinyGo.
+- **Simple API:** Easy-to-use API for symmetric and asymmetric encryption, digital signatures, HMAC, constant-time operations, blowfish, and bcrypt.
+- **TinyGo Optimized:** Subpackages allow fine-grained imports without pulling unnecessary cipher tables or stdlib packages into applications.
 - **WebAssembly Ready:** Can be used in browser environments.
-- **Zero Dependencies on Go Standard Library:** Uses `github.com/tinywasm/fmt` for string, number, and error handling to minimize binary size.
+- **Zero Dependencies on Go Standard Library for Core Codecs:** Uses `github.com/tinywasm/fmt` and `github.com/tinywasm/base64`.
 
 ## Basic Usage
 
@@ -20,6 +20,7 @@ package main
 import (
 	"github.com/tinywasm/fmt"
 	"github.com/tinywasm/crypto"
+	"github.com/tinywasm/crypto/bcrypt"
 )
 
 func main() {
@@ -35,6 +36,14 @@ func main() {
 		panic(err)
 	}
 	fmt.Println("Symmetric decrypted:", string(decrypted))
+
+	// Password hashing with bcrypt
+	hashed, err := bcrypt.GenerateFromPassword([]byte("mysecret"), bcrypt.DefaultCost)
+	if err != nil {
+		panic(err)
+	}
+	err = bcrypt.CompareHashAndPassword(hashed, []byte("mysecret"))
+	fmt.Println("Bcrypt verified:", err == nil)
 
 	// Asymmetric signatures
 	pub, priv, err := crypto.GenerateKeyPair()
@@ -53,6 +62,18 @@ func main() {
 	fmt.Println("Signature verified:", ok)
 }
 ```
+
+## Binary Size Benchmarks (TinyGo WebAssembly)
+
+Minimal standalone programs compiled with `tinygo build -target=wasm -no-debug -opt=z`:
+
+| Package / Operation | Compiled Size (WASM) |
+|---|---|
+| `crypto.HMACSHA256` | **264,575 bytes** |
+| `bcrypt.GenerateFromPassword` (`tinywasm/crypto/bcrypt`) | **65,620 bytes** |
+| `bcrypt.GenerateFromPassword` (`golang.org/x/crypto/bcrypt`) | **186,185 bytes** |
+
+*`tinywasm/crypto/bcrypt` avoids stdlib dependencies (`fmt`, `strconv`, `unicode`, `reflect`, `encoding/base64`), resulting in a **65% smaller** WASM binary compared to `golang.org/x/crypto/bcrypt`.*
 
 ## Documentation
 

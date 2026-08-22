@@ -1,13 +1,13 @@
 //go:build wasm
 
-package crypto
+package rand
 
 import (
 	"syscall/js"
 )
 
-func readRandom(b []byte) (err error) {
-	// In a browser environment, we can use crypto.getRandomValues.
+// Read fills b with cryptographically secure random bytes.
+func Read(b []byte) error {
 	uint8Array := js.Global().Get("Uint8Array").New(len(b))
 	js.Global().Get("crypto").Call("getRandomValues", uint8Array)
 	js.CopyBytesToGo(b, uint8Array)

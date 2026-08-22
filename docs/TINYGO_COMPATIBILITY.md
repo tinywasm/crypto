@@ -8,8 +8,9 @@ documento **verifica esa promesa con evidencia**, no con suposiciones, y deja
 registrada la decisión sobre qué paquetes del stdlib se usan y cuáles se
 implementan en casa.
 
-Última verificación: **2026-07-12**, TinyGo `0.41.1` (Go 1.25.2, LLVM 20.1.1),
-target `wasm`.
+Última verificación: **2026-08-22**, TinyGo `0.41.1` (Go 1.25.2, LLVM 20.1.1),
+target `wasm` — incluye los subpaquetes `crypto/subtle`, `crypto/blowfish`,
+`crypto/bcrypt` y `crypto/rand`.
 
 ## Por qué había que medirlo
 
@@ -39,12 +40,21 @@ Ejecutado de punta a punta (compilación TinyGo real + navegador real):
 
 ```
 cd crypto && gotest -tinygo
-→ vet ✅, race ✅, tests ✅, wasm ✅, coverage: 80.6% (124.2s)
+→ vet ✅, race ✅, tests ✅, wasm ✅, coverage: 90.5% (146.2s)
 ```
 
 Esto ejercita `Encrypt`/`Decrypt` (AES-GCM), `GenerateKeyPair`,
-`EncryptAsymmetric`/`DecryptAsymmetric` (ECDH) y `Sign`/`Verify` (ECDSA), con sus
-casos de error.
+`EncryptAsymmetric`/`DecryptAsymmetric` (ECDH), `Sign`/`Verify` (ECDSA),
+`ConstantTimeCompare` (`subtle`), el cifrador `blowfish` contra sus vectores
+publicados, y `bcrypt.GenerateFromPassword`/`CompareHashAndPassword`
+(incluida interoperabilidad con hashes de `golang.org/x/crypto/bcrypt`), con
+sus casos de error.
+
+`TestCostValidation` queda marcado `⚠️ slow` (6.6s): es el único test que
+necesita correr un hash a `DefaultCost` de verdad (valida que un coste por
+debajo del mínimo cae a `DefaultCost`), así que su costo es inherente, no un
+descuido — el resto de los tests de `bcrypt` usan `bcrypt.MinCost` por la
+regla anti-footgun del plan.
 
 ## Tabla de compatibilidad
 
@@ -55,10 +65,12 @@ casos de error.
 | `crypto/ecdh` | `tinycrypto.go` (cifrado asimétrico) | ✅ compila y pasa | usar stdlib |
 | `crypto/x509` | `tinycrypto.go` (serialización de claves) | ✅ compila y pasa | usar stdlib |
 | `crypto/sha256` | `tinycrypto.go`, `hmac.go` | ✅ compila y pasa | usar stdlib |
-| `crypto/rand` | `random_native.go` (`!wasm`) | n/a — no entra en el binario wasm | usar stdlib |
+| `crypto/rand` | `rand/rand_native.go` (`!wasm`) | n/a — no entra en el binario wasm | usar stdlib, aislado en subpaquete `crypto/rand` para que `bcrypt`/`blowfish` no importen la raíz |
 | `crypto/hmac` | `hmac.go` | ✅ compila y pasa | usar stdlib |
-| `crypto/subtle` | *pendiente* (comparación constante) | ✅ compila | usar stdlib |
+| `crypto/subtle` (raíz de este repo, no confundir con el stdlib `crypto/subtle`) | `subtle/subtle.go` | ✅ compila y pasa | implementación propia sin ningún import — ni siquiera `tinywasm/fmt` |
 | `encoding/base64` | base64url para JWT | ✅ compila | **sustituido** por `tinywasm/base64` (cero deps, −31 KB) — ver abajo |
+| `golang.org/x/crypto/blowfish` (no es stdlib) | `blowfish/cipher.go` | ✅ compila y pasa | **portado** a `crypto/blowfish` — ver sección siguiente |
+| `golang.org/x/crypto/bcrypt` (no es stdlib) | `bcrypt/bcrypt.go` | ✅ compila y pasa | **portado** a `crypto/bcrypt` — ver sección siguiente |
 
 **Conclusión sobre la pregunta original:** no hace falta copiar ni reimplementar
 ninguna primitiva criptográfica. Todo el `crypto/*` que usa (y usará) esta
@@ -96,6 +108,41 @@ sin importar nada) el paquete pasó a ahorrar 31 KB de verdad.
    dependencias**. Sustituir stdlib por una librería propia que a su vez arrastra
    `tinywasm/fmt` puede salir *más caro* que el stdlib. **Medir siempre, nunca
    asumir.**
+
+## `bcrypt`/`blowfish`: por qué se portaron en vez de usar `golang.org/x/crypto`
+
+`golang.org/x/crypto/bcrypt` y `golang.org/x/crypto/blowfish` compilan bajo
+TinyGo, pero **no son stdlib**: son un módulo aparte, y su cadena de imports
+arrastra `fmt`, `strconv`, `errors`, `io`, `unicode`, `reflect` y
+`encoding/base64` — exactamente lo que este repo existe para evitar. Medido en
+`veltylabs/misitio` (Worker de Cloudflare): esa cadena cuesta 109 664 bytes,
+15 % del binario. Por eso se portaron a `crypto/bcrypt` y `crypto/blowfish`
+como subpaquetes hoja, sin ninguna de esas dependencias.
+
+### La trampa se repitió: medir de verdad, no solo `go list -deps`
+
+El primer intento de `crypto/bcrypt` llamaba a `crypto.Random` de la **raíz**
+de este repo para la sal. `go build`/`go vet`/`gotest` pasaban en verde. Pero
+la raíz ya importa `crypto/aes`, `crypto/x509`, `crypto/ecdsa`,
+`crypto/elliptic` (ver tabla arriba) — y Go compila un paquete como una sola
+unidad, así que ese único import arrastró todo eso, más `fmt`/`reflect` que
+esas primitivas necesitan.
+
+Medido con `tinygo build -target=wasm -no-debug -opt=z` de un programa mínimo
+que solo llama a `bcrypt.GenerateFromPassword`:
+
+| Versión | Binario |
+|---|---|
+| primer intento (`bcrypt` importa la raíz `crypto`) | 285 486 bytes — **53 % más grande** que `golang.org/x/crypto/bcrypt` |
+| corregido (`bcrypt` importa `crypto/rand`, no la raíz) | 65 620 bytes — **65 % más chico** que `golang.org/x/crypto/bcrypt` |
+| `golang.org/x/crypto/bcrypt` (referencia) | 186 185 bytes |
+
+El primer número invertía por completo el propósito del paquete: un
+`go list -deps` sobre `./bcrypt/` ya lo habría delatado (mostraba
+`fmt, strconv, errors, io, bytes, unicode, reflect, encoding/base64`), pero el
+número real solo salió a la luz al compilar de verdad con TinyGo. **La lección
+de la sección anterior se repite aquí**: ni siquiera un import de una sola
+línea a dentro del propio repo está exento de medirse.
 
 ## Cómo reproducir estas mediciones
 
