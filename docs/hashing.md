@@ -1,6 +1,6 @@
 # Hashing and MACs
 
-The `crypto` package provides HMAC-SHA256, the standard primitive for
+The `crypto/hmac` package provides HMAC-SHA256, the standard primitive for
 authenticating messages and signing JWT (JSON Web Tokens).
 
 ## HMAC-SHA256
@@ -32,7 +32,7 @@ that Base64 encoding is handled by the `github.com/tinywasm/base64` package.
 ```go
 import (
 	"github.com/tinywasm/base64"
-	"github.com/tinywasm/crypto"
+	"github.com/tinywasm/crypto/hmac"
 )
 
 func SignJWT(header, payload string, key []byte) string {
@@ -42,7 +42,7 @@ func SignJWT(header, payload string, key []byte) string {
 
 	// 2. Sign "header.payload"
 	unsignedToken := h + "." + p
-	signature := crypto.HMACSHA256(key, []byte(unsignedToken))
+	signature := hmac.HMACSHA256(key, []byte(unsignedToken))
 
 	// 3. Append encoded signature
 	return unsignedToken + "." + base64.URLEncode(signature)
@@ -51,11 +51,11 @@ func SignJWT(header, payload string, key []byte) string {
 func VerifyJWT(token string, key []byte) bool {
 	// ... split token into unsignedToken and providedSig ...
 
-	expectedSig := crypto.HMACSHA256(key, []byte(unsignedToken))
+	expectedSig := hmac.HMACSHA256(key, []byte(unsignedToken))
 	providedSig, _ := base64.URLDecode(providedSigEncoded)
 
 	// ALWAYS use HMACEqual for verification
-	return crypto.HMACEqual(expectedSig, providedSig)
+	return hmac.HMACEqual(expectedSig, providedSig)
 }
 ```
 

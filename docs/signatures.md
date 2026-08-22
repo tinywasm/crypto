@@ -19,17 +19,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/tinywasm/crypto"
+	"github.com/tinywasm/crypto/asym"
 )
 
 func main() {
-	crypto := tinycrypto.New()
-
 	// Assume you have a private key.
 	myPrivateKey := ...
 	message := []byte("this message needs to be signed")
 
-	signature, err := crypto.Sign(message, myPrivateKey)
+	signature, err := asym.Sign(message, myPrivateKey)
 	if err != nil {
 		panic(err)
 	}
@@ -54,18 +52,16 @@ package main
 
 import (
 	"fmt"
-	"github.com/tinywasm/crypto"
+	"github.com/tinywasm/crypto/asym"
 )
 
 func main() {
-	crypto := tinycrypto.New()
-
 	// Assume you have the public key, the message, and the signature.
 	publicKey := ...
 	message := []byte("this message needs to be signed")
 	signature := ...
 
-	ok, err := crypto.Verify(message, signature, publicKey)
+	ok, err := asym.Verify(message, signature, publicKey)
 	if err != nil {
 		panic(err)
 	}

@@ -1,4 +1,4 @@
-package crypto
+package hmac
 
 import (
 	"crypto/hmac"
@@ -8,7 +8,7 @@ import (
 )
 
 // HMACSHA256 returns the HMAC-SHA256 of message under key.
-// Used by tinywasm/user to sign JWT session tokens.
+// Used by tinywasm/jwt to sign JWT session tokens.
 func HMACSHA256(key, message []byte) []byte {
 	mac := hmac.New(sha256.New, key)
 	mac.Write(message)

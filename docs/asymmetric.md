@@ -17,13 +17,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/tinywasm/crypto"
+	"github.com/tinywasm/crypto/asym"
 )
 
 func main() {
-	crypto := tinycrypto.New()
-
-	publicKey, privateKey, err := crypto.GenerateKeyPair()
+	publicKey, privateKey, err := asym.GenerateKeyPair()
 	if err != nil {
 		panic(err)
 	}
@@ -48,17 +46,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/tinywasm/crypto"
+	"github.com/tinywasm/crypto/asym"
 )
 
 func main() {
-	crypto := tinycrypto.New()
-
 	// Assume you have the recipient's public key.
 	recipientPublicKey := ...
 	plaintext := []byte("this is a secret message for the recipient")
 
-	ciphertext, err := crypto.EncryptAsymmetric(plaintext, recipientPublicKey)
+	ciphertext, err := asym.EncryptAsymmetric(plaintext, recipientPublicKey)
 	if err != nil {
 		panic(err)
 	}
@@ -82,17 +78,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/tinywasm/crypto"
+	"github.com/tinywasm/crypto/asym"
 )
 
 func main() {
-	crypto := tinycrypto.New()
-
 	// Assume you have your private key and the ciphertext.
 	myPrivateKey := ...
 	ciphertext := ...
 
-	plaintext, err := crypto.DecryptAsymmetric(ciphertext, myPrivateKey)
+	plaintext, err := asym.DecryptAsymmetric(ciphertext, myPrivateKey)
 	if err != nil {
 		panic(err)
 	}

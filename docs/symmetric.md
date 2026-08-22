@@ -17,16 +17,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/tinywasm/crypto"
+	"github.com/tinywasm/crypto/aesgcm"
 )
 
 func main() {
-	crypto := tinycrypto.New()
-
 	key := make([]byte, 32) // In a real application, use a securely generated random key.
 	plaintext := []byte("this is a secret message")
 
-	ciphertext, err := crypto.Encrypt(plaintext, key)
+	ciphertext, err := aesgcm.Encrypt(plaintext, key)
 	if err != nil {
 		panic(err)
 	}
@@ -50,17 +48,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/tinywasm/crypto"
+	"github.com/tinywasm/crypto/aesgcm"
 )
 
 func main() {
-	crypto := tinycrypto.New()
-
 	key := make([]byte, 32) // Use the same key as for encryption.
 	// ciphertext from the Encrypt example.
 	ciphertext := ...
 
-	plaintext, err := crypto.Decrypt(ciphertext, key)
+	plaintext, err := aesgcm.Decrypt(ciphertext, key)
 	if err != nil {
 		panic(err) // This will happen if the key is wrong or the data is corrupt.
 	}

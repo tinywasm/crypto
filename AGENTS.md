@@ -14,9 +14,10 @@ so **binary size is a design constraint, not a detail**.
 
 ## Public API shape — direct package functions
 
-Stateless, package-level functions (`crypto.Encrypt`, `crypto.Sign`,
-`crypto.HMACSHA256`). **No** constructor, **no** config struct, **no** receiver:
-this library does entropy generation and pure math, so it holds no state.
+Stateless, package-level functions per leaf (`aesgcm.Encrypt`, `asym.Sign`,
+`hmac.HMACSHA256`; root only `crypto.Random`). **No** constructor, **no** config
+struct, **no** receiver: this library does entropy generation and pure math, so
+it holds no state.
 
 - **Typed over `any`** — zero generics, zero `any`, zero `map` in the public
   API (the `tinywasm/fmt` codec rule: *"cero any, cero map"*).
@@ -34,9 +35,32 @@ strings, numbers and errors; it is dot-imported here:
 `crypto/ecdh`, `crypto/ecdsa`, `crypto/sha256`, `crypto/hmac`, `crypto/rand`,
 `crypto/subtle`, `crypto/x509`) **are allowed and expected inside this
 library** — they are TinyGo-supported, constant-time where it matters, and
-re-implementing primitives in Go would be both slower and less safe. This is
-the whole point of the package: it is the one place where crypto stdlib is
-concentrated, so that **consumers never import it**.
+re-implementing primitives in Go would be both slower and less safe.
+
+⚠️ **The carve-out says WHICH implementation to call, never WHERE to put it.**
+An earlier version of this guide read "it is the one place where crypto stdlib
+is concentrated, so that consumers never import it" — **that was wrong, and it
+is what bloated the root package.** Concentrating every primitive into one Go
+package makes every consumer pay for the heaviest member of it, because Go
+links a package as a unit: importing the root for `HMACSHA256` links
+`crypto/x509`, and x509 drags `net`, `encoding/pem`, `encoding/asn1`,
+`math/big`, `fmt` and `reflect` with it.
+
+Measured (`tinygo build -target=wasm -no-debug -opt=z`, TinyGo 0.41.1):
+
+| Minimal program | Binary |
+|---|---|
+| empty `main` (floor) | 21 731 B |
+| `crypto/hmac` + `crypto/sha256` called directly | 155 534 B |
+| the same HMAC through `crypto.HMACSHA256` (root pkg) | **264 638 B** |
+
+**A consumer that only signs JWTs pays ~109 KB for X.509, PEM and ASN.1 it
+never calls.** That is the same 109 KB the bcrypt plan was written to remove
+from `veltylabs/misitio` — reintroduced by the library meant to prevent it.
+
+The correct doctrine is the one in "Leaf subpackages" below: **the root
+package must be as light as any leaf.** Grouping is by what a consumer imports
+together, not by "it's all crypto".
 
 That carve-out does **not** extend to anything else. No `encoding/*`, no
 `strings`, no `strconv`, no `errors`, no `time`, no `fmt`. Encodings
@@ -49,15 +73,14 @@ shipped (bcrypt, blowfish): those live only in `golang.org/x/crypto`, which
 pulls in `fmt`/`errors`/`reflect` through its own dependency chain, so they
 are ported into leaf subpackages instead — see "Leaf subpackages" below.
 
-## Leaf subpackages — the pattern for anything the root package can't carry
+## Leaf subpackages — the default, not the exception
 
-The root package (`tinycrypto.go`) already imports `crypto/aes`, `crypto/x509`,
-`crypto/ecdsa`, `crypto/elliptic`, `crypto/ecdh` — real weight. Any new
-primitive that must stay stdlib-free (no `fmt`, `strconv`, `errors`, `io`,
-`bytes`, `unicode`, `reflect`, `encoding/base64`) **cannot import the root
-package**, even for something as small as random bytes: Go compiles a package
-as one unit, so one import of `github.com/tinywasm/crypto` drags in
-everything the root carries.
+**Every new capability goes in its own leaf subpackage.** The root package
+only exposes `Random` — it is not a home for new code and no longer re-exports
+`Encrypt`, `Sign` or `HMACSHA256` (breaking change; import the leaf instead).
+Anything that must stay free of `fmt`, `strconv`, `errors`, `io`, `bytes`,
+`unicode`, `reflect`, `encoding/base64` **cannot import the root package**
+for crypto, even before the break: Go compiles a package as one unit.
 
 Established leaf subpackages, each with zero non-test stdlib imports from the
 forbidden list (verify with `GOOS=js GOARCH=wasm go list -deps ./<pkg>/`):
@@ -65,10 +88,23 @@ forbidden list (verify with `GOOS=js GOARCH=wasm go list -deps ./<pkg>/`):
 - `crypto/subtle` — `ConstantTimeCompare`, `ConstantTimeByteEq`.
 - `crypto/blowfish` — block cipher, ported from `golang.org/x/crypto/blowfish`.
 - `crypto/bcrypt` — password hashing, ported from `golang.org/x/crypto/bcrypt`.
-- `crypto/rand` — `Read(b []byte) error`, the entropy source these packages
-  use instead of the root's `Random`. The root's `Random` is a thin re-export
-  of `crypto/rand.Read` for existing callers — new stdlib-free code should
-  import `crypto/rand` directly, not the root package.
+- `crypto/rand` — `Read(b []byte) error`, the **single entropy source for the
+  whole library**. The root's `Random` is a thin re-export of it, and the root
+  feeds it to `ecdsa`/`ecdh` through the tiny `randReader` `io.Reader` adapter
+  (now in `asym/asym.go`) rather than importing stdlib `crypto/rand` a second time.
+  New stdlib-free code imports `crypto/rand` directly, never the root package.
+
+  Note the adapter buys clarity, not bytes: `crypto/x509` imports stdlib
+  `crypto/rand` unconditionally, so while the root still uses x509 the stdlib
+  CSPRNG is linked either way (measured: byte-identical, 264 638 B before and
+  after). One entropy path is still the right invariant — it is what makes the
+  browser/native split auditable in one place.
+- `crypto/hmac` — `HMACSHA256`, `HMACEqual` (`crypto/hmac`, `crypto/sha256`).
+- `crypto/aesgcm` — `Encrypt`, `Decrypt` (`crypto/aes`, `crypto/cipher`).
+- `crypto/asym` — `GenerateKeyPair`, `Sign`, `Verify`, `EncryptAsymmetric`,
+  `DecryptAsymmetric` (`crypto/ecdsa`, `crypto/ecdh`, `crypto/x509` — the
+  only leaf that carries `crypto/x509` by design; anyone serializing a key
+  pair already accepts that dependency).
 
 **Measure, don't assume:** the first attempt at `crypto/bcrypt` imported the
 root package for randomness and shipped a TinyGo binary 53% *larger* than
