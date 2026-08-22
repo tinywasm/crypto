@@ -19,13 +19,13 @@ type Error string
 func (e Error) Error() string { return string(e) }
 
 const (
-	ErrHashTooShort              Error = "bcrypt: el hash es demasiado corto"
-	ErrMismatchedHashAndPassword Error = "bcrypt: el hash no corresponde a la contraseña"
-	ErrCostTooLow                      = "bcrypt: coste %d por debajo del mínimo %d"
-	ErrCostTooHigh                     = "bcrypt: coste %d por encima del máximo %d"
-	ErrHashVersionTooNew               = "bcrypt: versión de hash '%c' no soportada"
-	ErrPasswordTooLong           Error = "bcrypt: la contraseña supera los 72 bytes"
-	ErrInvalidHashPrefix               = "bcrypt: los hashes deben comenzar con '$', pero comienza con '%c'"
+	ErrHashTooShort              Error = "bcrypt: hash too short"
+	ErrMismatchedHashAndPassword Error = "bcrypt: hashedPassword is not the hash of the given password"
+	ErrCostTooLow                      = "bcrypt: cost %d is below the minimum %d"
+	ErrCostTooHigh                     = "bcrypt: cost %d is above the maximum %d"
+	ErrHashVersionTooNew               = "bcrypt: hash version '%c' is not supported"
+	ErrPasswordTooLong           Error = "bcrypt: password exceeds 72 bytes"
+	ErrInvalidHashPrefix               = "bcrypt: hash must start with '$', got '%c'"
 )
 
 const (
@@ -74,7 +74,7 @@ type hashed struct {
 	minor byte
 }
 
-// GenerateFromPassword devuelve el hash bcrypt de la contraseña al coste dado.
+// GenerateFromPassword returns the bcrypt hash of the password at the given cost.
 func GenerateFromPassword(password []byte, cost int) ([]byte, error) {
 	if len(password) > 72 {
 		return nil, ErrPasswordTooLong
@@ -86,7 +86,7 @@ func GenerateFromPassword(password []byte, cost int) ([]byte, error) {
 	return p.Hash(), nil
 }
 
-// CompareHashAndPassword compara un hash bcrypt con una posible contraseña en claro.
+// CompareHashAndPassword compares a bcrypt hash with a candidate plaintext password.
 func CompareHashAndPassword(hashedPassword, password []byte) error {
 	p, err := newFromHash(hashedPassword)
 	if err != nil {
@@ -106,7 +106,7 @@ func CompareHashAndPassword(hashedPassword, password []byte) error {
 	return ErrMismatchedHashAndPassword
 }
 
-// Cost devuelve el coste utilizado para crear el hash dado.
+// Cost returns the cost used to create the given hash.
 func Cost(hashedPassword []byte) (int, error) {
 	p, err := newFromHash(hashedPassword)
 	if err != nil {

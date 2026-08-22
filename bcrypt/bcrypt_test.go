@@ -12,7 +12,7 @@ import (
 
 func TestBcryptingIsEasy(t *testing.T) {
 	pass := []byte("mypassword")
-	hp, err := bcrypt.GenerateFromPassword(pass, 0)
+	hp, err := bcrypt.GenerateFromPassword(pass, bcrypt.MinCost)
 	if err != nil {
 		t.Fatalf("GenerateFromPassword error: %s", err)
 	}

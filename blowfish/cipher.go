@@ -4,20 +4,20 @@ import (
 	. "github.com/tinywasm/fmt"
 )
 
-// BlockSize es el tamaño de bloque de Blowfish en bytes (8 bytes).
+// BlockSize is the Blowfish block size in bytes (8 bytes).
 const BlockSize = 8
 
-// ErrKeySize es el error devuelto cuando la clave tiene un tamaño no válido.
-const ErrKeySize = "blowfish: longitud de clave no válida"
+// ErrKeySize is the error returned when the key has an invalid size.
+const ErrKeySize = "blowfish: invalid key size"
 
-// Cipher es una instancia del cifrador Blowfish.
+// Cipher is an instance of the Blowfish cipher.
 type Cipher struct {
 	p              [18]uint32
 	s0, s1, s2, s3 [256]uint32
 }
 
-// NewCipher crea y devuelve un Cipher.
-// La clave debe tener entre 1 y 56 bytes.
+// NewCipher creates and returns a Cipher.
+// The key must be between 1 and 56 bytes long.
 func NewCipher(key []byte) (*Cipher, error) {
 	if k := len(key); k < 1 || k > 56 {
 		return nil, Err(ErrKeySize)
@@ -28,9 +28,8 @@ func NewCipher(key []byte) (*Cipher, error) {
 	return &result, nil
 }
 
-// NewSaltedCipher crea y devuelve un Cipher que incorpora una sal en su
-// programa de claves (key schedule). Para compatibilidad con bcrypt, la clave
-// puede superar los 56 bytes.
+// NewSaltedCipher creates and returns a Cipher that folds a salt into its
+// key schedule. For bcrypt compatibility, the key may exceed 56 bytes.
 func NewSaltedCipher(key, salt []byte) (*Cipher, error) {
 	if len(salt) == 0 {
 		return NewCipher(key)
@@ -44,7 +43,7 @@ func NewSaltedCipher(key, salt []byte) (*Cipher, error) {
 	return &result, nil
 }
 
-// Encrypt cifra el bloque de 8 bytes src y guarda el resultado en dst.
+// Encrypt encrypts the 8-byte block src and stores the result in dst.
 func (c *Cipher) Encrypt(dst, src []byte) {
 	l := uint32(src[0])<<24 | uint32(src[1])<<16 | uint32(src[2])<<8 | uint32(src[3])
 	r := uint32(src[4])<<24 | uint32(src[5])<<16 | uint32(src[6])<<8 | uint32(src[7])
@@ -53,7 +52,7 @@ func (c *Cipher) Encrypt(dst, src []byte) {
 	dst[4], dst[5], dst[6], dst[7] = byte(r>>24), byte(r>>16), byte(r>>8), byte(r)
 }
 
-// Decrypt descifra el bloque de 8 bytes src y guarda el resultado en dst.
+// Decrypt decrypts the 8-byte block src and stores the result in dst.
 func (c *Cipher) Decrypt(dst, src []byte) {
 	l := uint32(src[0])<<24 | uint32(src[1])<<16 | uint32(src[2])<<8 | uint32(src[3])
 	r := uint32(src[4])<<24 | uint32(src[5])<<16 | uint32(src[6])<<8 | uint32(src[7])
@@ -84,7 +83,7 @@ func getNextWord(b []byte, pos *int) uint32 {
 	return w
 }
 
-// ExpandKey realiza la expansión de la clave en el Cipher dado.
+// ExpandKey performs the key expansion on the given Cipher.
 func ExpandKey(key []byte, c *Cipher) {
 	j := 0
 	for i := 0; i < 18; i++ {

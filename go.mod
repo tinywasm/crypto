@@ -7,4 +7,4 @@ require (
 	github.com/tinywasm/fmt v0.25.7
 )
 
-require golang.org/x/crypto v0.55.0 // indirect
+require golang.org/x/crypto v0.55.0

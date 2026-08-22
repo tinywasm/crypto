@@ -42,16 +42,52 @@ That carve-out does **not** extend to anything else. No `encoding/*`, no
 `strings`, no `strconv`, no `errors`, no `time`, no `fmt`. Encodings
 (base64url, hex) are implemented in-repo over `[]byte`.
 
-**Never roll your own primitive.** No hand-written SHA/AES/HMAC compression
-loops — call the stdlib `crypto/*` implementation.
+**Never roll your own primitive if it is in the Go standard library.** No
+hand-written SHA/AES/HMAC compression loops — call the stdlib `crypto/*`
+implementation. This does **not** cover primitives the standard library never
+shipped (bcrypt, blowfish): those live only in `golang.org/x/crypto`, which
+pulls in `fmt`/`errors`/`reflect` through its own dependency chain, so they
+are ported into leaf subpackages instead — see "Leaf subpackages" below.
+
+## Leaf subpackages — the pattern for anything the root package can't carry
+
+The root package (`tinycrypto.go`) already imports `crypto/aes`, `crypto/x509`,
+`crypto/ecdsa`, `crypto/elliptic`, `crypto/ecdh` — real weight. Any new
+primitive that must stay stdlib-free (no `fmt`, `strconv`, `errors`, `io`,
+`bytes`, `unicode`, `reflect`, `encoding/base64`) **cannot import the root
+package**, even for something as small as random bytes: Go compiles a package
+as one unit, so one import of `github.com/tinywasm/crypto` drags in
+everything the root carries.
+
+Established leaf subpackages, each with zero non-test stdlib imports from the
+forbidden list (verify with `GOOS=js GOARCH=wasm go list -deps ./<pkg>/`):
+
+- `crypto/subtle` — `ConstantTimeCompare`, `ConstantTimeByteEq`.
+- `crypto/blowfish` — block cipher, ported from `golang.org/x/crypto/blowfish`.
+- `crypto/bcrypt` — password hashing, ported from `golang.org/x/crypto/bcrypt`.
+- `crypto/rand` — `Read(b []byte) error`, the entropy source these packages
+  use instead of the root's `Random`. The root's `Random` is a thin re-export
+  of `crypto/rand.Read` for existing callers — new stdlib-free code should
+  import `crypto/rand` directly, not the root package.
+
+**Measure, don't assume:** the first attempt at `crypto/bcrypt` imported the
+root package for randomness and shipped a TinyGo binary 53% *larger* than
+`golang.org/x/crypto/bcrypt` — the opposite of the point. Always confirm a new
+leaf subpackage with an actual `tinygo build -target=wasm -no-debug -opt=z` of
+a minimal program, not just `go list -deps`.
 
 ## Environment-specific code
 
-Only entropy differs per environment, and it is isolated by build tag:
+Entropy is the only thing that differs per environment, and it is isolated by
+build tag inside `crypto/rand`:
 
-- `random_native.go` (`//go:build !wasm`) → `crypto/rand`.
-- `random_wasm.go` (`//go:build wasm`) → `crypto.getRandomValues()` via
+- `rand/rand_native.go` (`//go:build !wasm`) → `crypto/rand` (stdlib).
+- `rand/rand_wasm.go` (`//go:build wasm`) → `crypto.getRandomValues()` via
   `syscall/js`.
+
+The root package's `random.go` (no build tag) re-exports
+`github.com/tinywasm/crypto/rand.Read` as `Random(b []byte) error` for
+backward compatibility with existing callers.
 
 Everything else is tag-free and must compile for **both** targets. `syscall/js`
 appears **only** in `*_wasm.go` files.
@@ -112,3 +148,8 @@ re-index `README.md` so every file under `docs/` is linked. Diagrams are
 - Never change an existing function's signature or algorithm without it being
   ordered by `docs/PLAN.md`: consumers (`tinywasm/user`) sign persisted data
   with them, and a silent format change invalidates stored credentials/tokens.
+- Never write Spanish in code comments or error strings, even if a
+  `docs/PLAN.md` instructs otherwise — a plan's own language is not a source
+  of code convention. This repo is English throughout, code and comments
+  alike; the sole exception is `docs/TINYGO_COMPATIBILITY.md`, Spanish by its
+  own explicit header note.

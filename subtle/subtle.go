@@ -1,9 +1,9 @@
 package subtle
 
-// ConstantTimeCompare devuelve 1 si x e y son iguales, 0 si no. El tiempo de
-// ejecución depende sólo de la longitud, nunca del contenido: comparar con un
-// cortocircuito filtra por cuántos bytes coinciden y con eso se reconstruye un
-// hash byte a byte.
+// ConstantTimeCompare returns 1 if x and y are equal, 0 otherwise. Running
+// time depends only on the length, never on the content: a short-circuit
+// comparison leaks how many bytes match, and that is enough to reconstruct
+// a hash byte by byte.
 func ConstantTimeCompare(x, y []byte) int {
 	if len(x) != len(y) {
 		return 0
@@ -17,7 +17,7 @@ func ConstantTimeCompare(x, y []byte) int {
 	return ConstantTimeByteEq(v, 0)
 }
 
-// ConstantTimeByteEq devuelve 1 si x == y, 0 si no.
+// ConstantTimeByteEq returns 1 if x == y, 0 otherwise.
 func ConstantTimeByteEq(x, y uint8) int {
 	z := ^(x ^ y)
 	z &= z >> 4
