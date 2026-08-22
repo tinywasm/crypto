@@ -3,8 +3,8 @@ package bcrypt
 import (
 	"github.com/tinywasm/base64"
 	. "github.com/tinywasm/fmt"
-	"github.com/tinywasm/crypto"
 	"github.com/tinywasm/crypto/blowfish"
+	"github.com/tinywasm/crypto/rand"
 	"github.com/tinywasm/crypto/subtle"
 )
 
@@ -130,7 +130,7 @@ func newFromPassword(password []byte, cost int) (*hashed, error) {
 	p.cost = cost
 
 	unencodedSalt := make([]byte, maxSaltSize)
-	err = crypto.Random(unencodedSalt)
+	err = rand.Read(unencodedSalt)
 	if err != nil {
 		return nil, err
 	}

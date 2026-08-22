@@ -68,7 +68,7 @@ func test_HMACEqual(t *testing.T) {
 
 func test_EncryptDecrypt(t *testing.T) {
 	key := make([]byte, 32)
-	if err := readRandom(key); err != nil {
+	if err := Random(key); err != nil {
 		t.Fatalf("failed to generate key: %v", err)
 	}
 
@@ -126,7 +126,7 @@ func test_EncryptDecryptError(t *testing.T) {
 
 	// Test with corrupted ciphertext
 	realKey := make([]byte, 32)
-	if err := readRandom(realKey); err != nil {
+	if err := Random(realKey); err != nil {
 		t.Fatalf("failed to generate key: %v", err)
 	}
 	ciphertext, _ := Encrypt(plaintext, realKey)

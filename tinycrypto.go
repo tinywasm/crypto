@@ -6,11 +6,12 @@ import (
 	"crypto/ecdh"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/rand"
+	stdrand "crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
 
 	. "github.com/tinywasm/fmt"
+	"github.com/tinywasm/crypto/rand"
 )
 
 // The crypto logic is exposed as direct package-level functions.
@@ -33,7 +34,7 @@ func Encrypt(plaintext, key []byte) (ciphertext []byte, err error) {
 	}
 
 	nonce := make([]byte, gcm.NonceSize())
-	if err := readRandom(nonce); err != nil {
+	if err := rand.Read(nonce); err != nil {
 		return nil, err
 	}
 
@@ -73,7 +74,7 @@ func Decrypt(ciphertext, key []byte) (plaintext []byte, err error) {
 
 // GenerateKeyPair generates a new ECDSA key pair for asymmetric cryptography using the P-256 curve.
 func GenerateKeyPair() (publicKey []byte, privateKey []byte, err error) {
-	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	privKey, err := ecdsa.GenerateKey(elliptic.P256(), stdrand.Reader)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -110,7 +111,7 @@ func EncryptAsymmetric(plaintext, publicKey []byte) (ciphertext []byte, err erro
 	}
 
 	// Generate ephemeral key pair
-	ephemeral, err := ecdh.P256().GenerateKey(rand.Reader)
+	ephemeral, err := ecdh.P256().GenerateKey(stdrand.Reader)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +184,7 @@ func Sign(message, privateKey []byte) (signature []byte, err error) {
 	}
 
 	hash := sha256.Sum256(message)
-	signature, err = ecdsa.SignASN1(rand.Reader, privKey, hash[:])
+	signature, err = ecdsa.SignASN1(stdrand.Reader, privKey, hash[:])
 	if err != nil {
 		return nil, err
 	}
