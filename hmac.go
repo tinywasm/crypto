@@ -3,6 +3,8 @@ package crypto
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+
+	"github.com/tinywasm/crypto/subtle"
 )
 
 // HMACSHA256 returns the HMAC-SHA256 of message under key.
@@ -17,5 +19,5 @@ func HMACSHA256(key, message []byte) []byte {
 // A non-constant-time comparison of a MAC is a timing oracle: never
 // compare signatures with == or a byte loop that returns early.
 func HMACEqual(mac1, mac2 []byte) bool {
-	return hmac.Equal(mac1, mac2)
+	return subtle.ConstantTimeCompare(mac1, mac2) == 1
 }
