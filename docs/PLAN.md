@@ -2,6 +2,8 @@
 PLAN: "fix(rand): report CSPRNG failures on wasm and add rand.Secret/rand.Bytes"
 EXECUTOR: jules
 REVIEWER: none
+STATUS: running
+SESSION: 4210761956456625973
 ---
 
 > Este plan se despacha con el flujo CodeJob. Ver skill: `agents-workflow`.
