@@ -28,9 +28,28 @@ ciphertext, err := crypto.Encrypt(plaintext, key)
 ```
 Struct `TinyCrypto` and its constructor `New()` are to be completely removed. All previously attached methods become package-global functions. Internal state is zero, ensuring functions are pure and thread-safe.
 
-## 3. Dual Testing Implementation
+## 3. Aleatoriedad / Randomness (`github.com/tinywasm/crypto/rand`)
 
-### 3.1 `shared_test.go`
+El paquete `rand` provee la fuente de entropía segura para el ecosistema.
+
+### Guía de Selección / Want -> Use
+
+| Quiero | Uso |
+|---|---|
+| Un secreto listo para cookie/state/client_secret | `rand.Secret()` |
+| Un secreto con largo impuesto por el formato | `rand.SecretN(n)` |
+| Bytes crudos para una clave | `rand.Bytes(n)` |
+| Llenar un buffer que ya tengo | `rand.Read(b)` |
+
+### Manejo de Errores en WebAssembly (WASM)
+
+En entornos WASM, `rand.Read` valida que `globalThis.crypto` y `getRandomValues` estén disponibles y ejecuta las llamadas en trozos de a lo sumo 65536 bytes (`maxChunk`) para evitar `QuotaExceededError`.
+
+Si el generador no está disponible o rechaza la solicitud, `rand.Read` devuelve `ErrNoCSPRNG` o `ErrCSPRNGFailed`. El consumidor debe propagar y manejar estos errores siempre.
+
+## 4. Dual Testing Implementation
+
+### 4.1 `shared_test.go`
 Contains the shared internal validation, abstracting standard library assumptions:
 ```go
 package crypto
@@ -46,7 +65,7 @@ func RunCryptoTests(t *testing.T) {
 func testEncryptDecrypt(t *testing.T) { /* ... implementation ... */ }
 ```
 
-### 3.2 `backStlib_test.go`
+### 4.2 `backStlib_test.go`
 Native Go tests entry point:
 ```go
 //go:build !wasm
@@ -60,7 +79,7 @@ func TestCrypto_Native(t *testing.T) {
 }
 ```
 
-### 3.3 `frontWasm_test.go`
+### 4.3 `frontWasm_test.go`
 TinyGo execution wrapper (browser-side assertions via `gotest` headless):
 ```go
 //go:build wasm
