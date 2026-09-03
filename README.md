@@ -5,7 +5,7 @@ A lightweight Go library for cryptographic operations, designed for WebAssembly 
 
 ## Features
 
-- **Simple API:** Easy-to-use API for symmetric and asymmetric encryption, digital signatures, HMAC, constant-time operations, blowfish, and bcrypt.
+- **Simple API:** Easy-to-use API for symmetric and asymmetric encryption, digital signatures, HMAC, constant-time operations, blowfish, bcrypt, and secure randomness/secrets generation.
 - **TinyGo Optimized:** Subpackages allow fine-grained imports without pulling unnecessary cipher tables or stdlib packages into applications.
 - **WebAssembly Ready:** Can be used in browser environments.
 - **Zero Dependencies on Go Standard Library for Core Codecs:** Uses `github.com/tinywasm/fmt` and `github.com/tinywasm/base64`.
@@ -24,11 +24,22 @@ import (
 	"github.com/tinywasm/crypto/aesgcm"
 	"github.com/tinywasm/crypto/asym"
 	"github.com/tinywasm/crypto/bcrypt"
+	"github.com/tinywasm/crypto/rand"
 )
 
 func main() {
+	// Secret generation
+	secretToken, err := rand.Secret()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Generated secret token:", secretToken)
+
 	// Symmetric encryption
-	key := make([]byte, 32) // AES-256 key
+	key, err := rand.Bytes(32) // AES-256 key
+	if err != nil {
+		panic(err)
+	}
 	plaintext := []byte("hello world")
 	ciphertext, err := aesgcm.Encrypt(plaintext, key)
 	if err != nil {
